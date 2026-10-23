@@ -25,7 +25,7 @@ export default function VendorProducts() {
   }, [])
 
   const handleDelete = async (id, name) => {
-    if (!window.confirm(`Are you sure you want to delete "${name}"?`)) return
+    if (!window.confirm(`Are you sure you want to remove "${name}" from your catalog?`)) return
 
     try {
       await apiRequest(`/products/${id}`, 'DELETE')
@@ -37,9 +37,11 @@ export default function VendorProducts() {
 
   if (loading) {
     return (
-      <div className="loading-spinner-container">
-        <div className="spinner"></div>
-        <p>Loading catalog products...</p>
+      <div className="vendor-products-container animate-fade-up">
+        <h1 className="page-title">My Listed Products</h1>
+        <div className="skeleton-card" style={{ height: '300px', marginTop: '1.5rem' }}>
+          <div className="skeleton-shimmer" style={{ width: '100%', height: '100%' }}></div>
+        </div>
       </div>
     )
   }
@@ -48,8 +50,11 @@ export default function VendorProducts() {
     <div className="vendor-products-container animate-fade-up">
       <div className="dashboard-header">
         <div>
-          <h1 className="page-title">My Listed Products</h1>
-          <p className="page-subtitle">Manage products visible in the VendiSphere marketplace.</p>
+          <span className="section-subtitle">STOREFRONT CATALOG</span>
+          <h1 className="page-title" style={{ margin: '4px 0 0 0' }}>My Listed Products</h1>
+          <p className="page-subtitle" style={{ margin: '4px 0 0 0' }}>
+            Manage active product listings visible to customers in the VendiSphere marketplace.
+          </p>
         </div>
 
         <Link to="/vendor/products/new" className="btn-primary">
@@ -64,10 +69,10 @@ export default function VendorProducts() {
           <table className="custom-table">
             <thead>
               <tr>
-                <th>Product</th>
+                <th>Product Details</th>
                 <th>Category</th>
                 <th>Price</th>
-                <th>Stock</th>
+                <th>Stock Level</th>
                 <th>Rating</th>
                 <th>Actions</th>
               </tr>
@@ -83,17 +88,26 @@ export default function VendorProducts() {
                       onError={(e) => { e.target.src = 'https://via.placeholder.com/50?text=Product' }}
                     />
                     <div>
-                      <strong>{p.name}</strong>
+                      <strong style={{ color: '#0f172a' }}>{p.name}</strong>
+                      <span style={{ display: 'block', fontSize: '0.78rem', color: '#64748b' }}>
+                        ID: #{p._id.substring(p._id.length - 6).toUpperCase()}
+                      </span>
                     </div>
                   </td>
-                  <td>{p.category}</td>
-                  <td>{formatINR(p.price)}</td>
+                  <td>
+                    <span className="product-category-tag">{p.category}</span>
+                  </td>
+                  <td>
+                    <strong style={{ color: '#0f172a' }}>{formatINR(p.price)}</strong>
+                  </td>
                   <td>
                     <span className={`stock-badge ${p.stock <= 5 ? 'stock-low' : 'stock-ok'}`}>
-                      {p.stock} units
+                      {p.stock <= 5 ? `⚠️ Only ${p.stock} units` : `${p.stock} units`}
                     </span>
                   </td>
-                  <td>⭐ {p.rating || 'N/A'}</td>
+                  <td>
+                    <span style={{ fontWeight: 600 }}>⭐ {p.rating > 0 ? p.rating : 'New'}</span>
+                  </td>
                   <td className="action-buttons-cell">
                     <Link to={`/vendor/products/edit/${p._id}`} className="btn-secondary btn-sm">
                       Edit
@@ -111,11 +125,14 @@ export default function VendorProducts() {
           </table>
         </div>
       ) : (
-        <div className="empty-results">
+        <div className="empty-results" style={{ background: '#ffffff', borderRadius: '20px', border: '1px solid #e2e8f0' }}>
+          <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#e0e7ff', color: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.75rem' }}>
+            📦
+          </div>
           <h2>No products listed yet</h2>
-          <p>Add your first product to start selling on VendiSphere.</p>
-          <Link to="/vendor/products/new" className="btn-primary">
-            Create Product Listing
+          <p>Create your first product listing to make it discoverable in the VendiSphere marketplace.</p>
+          <Link to="/vendor/products/new" className="btn-primary btn-lg">
+            Create Product Listing →
           </Link>
         </div>
       )}

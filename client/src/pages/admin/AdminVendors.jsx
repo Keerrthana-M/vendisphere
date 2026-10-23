@@ -49,20 +49,33 @@ export default function AdminVendors() {
 
   if (loading) {
     return (
-      <div className="loading-spinner-container">
-        <div className="spinner"></div>
-        <p>Loading vendor applications...</p>
+      <div className="admin-vendors-container animate-fade-up">
+        <h1 className="page-title">Vendor Approvals & Management</h1>
+        <div className="skeleton-card" style={{ height: '320px', marginTop: '1.5rem' }}>
+          <div className="skeleton-shimmer" style={{ width: '100%', height: '100%' }}></div>
+        </div>
       </div>
     )
   }
+
+  const pendingCount = vendors.filter(v => v.approvalStatus === 'pending').length
 
   return (
     <div className="admin-vendors-container animate-fade-up">
       <div className="dashboard-header">
         <div>
-          <h1 className="page-title">Vendor Management & Approvals</h1>
-          <p className="page-subtitle">Approve or reject vendor storefront applications on VendiSphere.</p>
+          <span className="section-subtitle">MERCHANT GOVERNANCE</span>
+          <h1 className="page-title" style={{ margin: '4px 0 0 0' }}>Vendor Management &amp; Approvals</h1>
+          <p className="page-subtitle" style={{ margin: '4px 0 0 0' }}>
+            Review merchant storefront registrations and grant or revoke marketplace catalog privileges.
+          </p>
         </div>
+
+        {pendingCount > 0 && (
+          <div style={{ background: '#fffbeb', border: '1px solid #fde68a', padding: '8px 14px', borderRadius: '12px', fontSize: '0.88rem', color: '#b45309', fontWeight: 600 }}>
+            ⏳ {pendingCount} application{pendingCount === 1 ? '' : 's'} waiting for approval
+          </div>
+        )}
       </div>
 
       {error && <div className="error-message">{error}</div>}
@@ -72,21 +85,32 @@ export default function AdminVendors() {
           <table className="custom-table">
             <thead>
               <tr>
-                <th>Business Name</th>
+                <th>Storefront / Business</th>
                 <th>Owner Name</th>
-                <th>Email</th>
-                <th>Description</th>
-                <th>Status</th>
+                <th>Email Address</th>
+                <th>Store Description</th>
+                <th>Approval Status</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {vendors.map(v => (
                 <tr key={v._id}>
-                  <td><strong>{v.businessName}</strong></td>
+                  <td>
+                    <strong style={{ color: '#0f172a', fontSize: '0.95rem' }}>{v.businessName}</strong>
+                    <span style={{ display: 'block', fontSize: '0.78rem', color: '#64748b' }}>
+                      Ref: #{v._id.substring(v._id.length - 6).toUpperCase()}
+                    </span>
+                  </td>
                   <td>{v.user?.name || 'N/A'}</td>
-                  <td>{v.user?.email || 'N/A'}</td>
-                  <td>{v.description || 'No description provided'}</td>
+                  <td>
+                    <span style={{ color: '#64748b' }}>{v.user?.email || 'N/A'}</span>
+                  </td>
+                  <td>
+                    <p style={{ margin: 0, fontSize: '0.86rem', color: '#475569', maxWidth: '280px', lineHeight: 1.4 }}>
+                      {v.description || 'No description provided.'}
+                    </p>
+                  </td>
                   <td>
                     <span className={`status-badge status-${v.approvalStatus}`}>
                       {v.approvalStatus.toUpperCase()}
@@ -99,7 +123,7 @@ export default function AdminVendors() {
                         disabled={actionId === v._id}
                         className="btn-success btn-sm"
                       >
-                        Approve
+                        {actionId === v._id ? 'Saving...' : '✓ Approve'}
                       </button>
                     )}
 
@@ -109,7 +133,7 @@ export default function AdminVendors() {
                         disabled={actionId === v._id}
                         className="btn-danger btn-sm"
                       >
-                        Reject
+                        {actionId === v._id ? 'Saving...' : '✕ Reject'}
                       </button>
                     )}
                   </td>
@@ -119,8 +143,12 @@ export default function AdminVendors() {
           </table>
         </div>
       ) : (
-        <div className="empty-results">
-          <h2>No vendor accounts registered</h2>
+        <div className="empty-results" style={{ background: '#ffffff', borderRadius: '20px', border: '1px solid #e2e8f0' }}>
+          <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#e0e7ff', color: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.75rem' }}>
+            🏪
+          </div>
+          <h2>No vendor accounts registered yet</h2>
+          <p>When merchants apply for storefront access, their applications will appear here for review.</p>
         </div>
       )}
     </div>

@@ -180,23 +180,44 @@ function AppLayout() {
                   <span className="brand-title">VendiSphere</span>
                 </div>
                 <p className="footer-desc">
-                  Smart Multi-Vendor Commerce Platform &amp; Business Intelligence
+                  Next-generation multi-vendor e-commerce platform connecting independent verified merchants with smart shoppers across India.
                 </p>
+                <div style={{ display: 'flex', gap: '8px', fontSize: '0.8rem', color: '#10b981', fontWeight: 600 }}>
+                  <span>✓ 100% Verified Sellers</span>
+                  <span>•</span>
+                  <span>🔒 Secure Payments</span>
+                </div>
               </div>
 
               <div className="footer-nav">
                 <div className="footer-column">
+                  <span className="footer-col-title">Shoppers</span>
+                  <Link to="/marketplace" className="footer-link">Explore Marketplace</Link>
+                  <Link to="/marketplace?category=Electronics" className="footer-link">Electronics</Link>
+                  <Link to="/marketplace?category=Fashion" className="footer-link">Fashion</Link>
+                  <Link to="/cart" className="footer-link">Shopping Cart</Link>
+                </div>
+
+                <div className="footer-column">
+                  <span className="footer-col-title">Merchants</span>
+                  <Link to="/register" className="footer-link">Become a Vendor</Link>
+                  <Link to="/login" className="footer-link">Vendor Sign In</Link>
+                  <Link to="/vendor/dashboard" className="footer-link">Merchant Console</Link>
+                  <Link to="/vendor/inventory" className="footer-link">Smart Inventory</Link>
+                </div>
+
+                <div className="footer-column">
                   <span className="footer-col-title">Platform</span>
                   <Link to="/" className="footer-link">Home</Link>
-                  <Link to="/marketplace" className="footer-link">Marketplace</Link>
                   <Link to="/login" className="footer-link">Sign In</Link>
                   <Link to="/register" className="footer-link">Register Account</Link>
+                  <Link to="/admin/dashboard" className="footer-link">Admin Portal</Link>
                 </div>
               </div>
             </div>
 
             <div className="footer-bottom">
-              <p>© 2026 VendiSphere Platform. All rights reserved.</p>
+              <p>© 2026 VendiSphere Platform. All rights reserved. Designed for multi-vendor excellence.</p>
             </div>
           </div>
         </footer>

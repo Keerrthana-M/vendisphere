@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { apiRequest } from '../../services/api'
 import { formatINR } from '../../utils/formatINR'
 
@@ -15,9 +16,11 @@ export default function AdminOrders() {
 
   if (loading) {
     return (
-      <div className="loading-spinner-container">
-        <div className="spinner"></div>
-        <p>Loading all marketplace transactions...</p>
+      <div className="admin-orders-container animate-fade-up">
+        <h1 className="page-title">Platform Order Transactions</h1>
+        <div className="skeleton-card" style={{ height: '320px', marginTop: '1.5rem' }}>
+          <div className="skeleton-shimmer" style={{ width: '100%', height: '100%' }}></div>
+        </div>
       </div>
     )
   }
@@ -26,9 +29,16 @@ export default function AdminOrders() {
     <div className="admin-orders-container animate-fade-up">
       <div className="dashboard-header">
         <div>
-          <h1 className="page-title">Platform Order Transactions</h1>
-          <p className="page-subtitle">Master list of orders across all platform customers and vendors.</p>
+          <span className="section-subtitle">TRANSACTION AUDIT</span>
+          <h1 className="page-title" style={{ margin: '4px 0 0 0' }}>Platform Order Transactions</h1>
+          <p className="page-subtitle" style={{ margin: '4px 0 0 0' }}>
+            Master audit trail of customer purchase transactions across all marketplace vendors.
+          </p>
         </div>
+
+        <span style={{ fontSize: '0.9rem', color: '#64748b' }}>
+          Total <strong>{orders.length}</strong> transaction{orders.length === 1 ? '' : 's'} recorded
+        </span>
       </div>
 
       <div className="table-responsive">
@@ -37,24 +47,47 @@ export default function AdminOrders() {
             <tr>
               <th>Order ID</th>
               <th>Customer</th>
-              <th>Items Count</th>
-              <th>Total Amount</th>
-              <th>Order Date</th>
-              <th>Status</th>
+              <th>Purchased Items</th>
+              <th>Gross Amount</th>
+              <th>Transaction Date</th>
+              <th>Fulfillment Status</th>
+              <th>Receipt</th>
             </tr>
           </thead>
           <tbody>
             {orders.map(o => (
               <tr key={o._id}>
-                <td><strong>#{o._id.substring(o._id.length - 8)}</strong></td>
-                <td>{o.user?.name || 'Customer'}</td>
-                <td>{o.items?.length || 0} item(s)</td>
-                <td><strong>{formatINR(o.totalAmount)}</strong></td>
-                <td>{new Date(o.createdAt).toLocaleDateString()}</td>
+                <td>
+                  <strong style={{ color: '#0f172a' }}>
+                    #{o._id.substring(o._id.length - 8).toUpperCase()}
+                  </strong>
+                </td>
+                <td>
+                  <strong style={{ color: '#0f172a' }}>{o.user?.name || 'Customer'}</strong>
+                  <span style={{ display: 'block', fontSize: '0.78rem', color: '#64748b' }}>
+                    {o.user?.email}
+                  </span>
+                </td>
+                <td>
+                  <span style={{ fontWeight: 600 }}>{o.items?.length || 0} item(s)</span>
+                </td>
+                <td>
+                  <strong style={{ color: '#0f172a' }}>{formatINR(o.totalAmount)}</strong>
+                </td>
+                <td>
+                  <span style={{ fontSize: '0.86rem', color: '#64748b' }}>
+                    {new Date(o.createdAt).toLocaleDateString()}
+                  </span>
+                </td>
                 <td>
                   <span className={`status-badge status-${o.status?.toLowerCase()}`}>
                     {o.status}
                   </span>
+                </td>
+                <td>
+                  <Link to={`/orders/${o._id}`} className="btn-secondary btn-sm" style={{ fontWeight: 600 }}>
+                    View Receipt
+                  </Link>
                 </td>
               </tr>
             ))}

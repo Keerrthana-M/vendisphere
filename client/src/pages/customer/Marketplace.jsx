@@ -1,19 +1,19 @@
 import { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { apiRequest } from '../../services/api'
 import { useAuth } from '../../context/AuthContext'
 import { formatINR } from '../../utils/formatINR'
 
 const CATEGORIES = [
-  'All',
-  'Electronics',
-  'Fashion',
-  'Grocery',
-  'Accessories',
-  'Home & Kitchen',
-  'Books',
-  'Sports & Fitness',
-  'Beauty & Personal Care'
+  { name: 'All', icon: '✦' },
+  { name: 'Electronics', icon: '💻' },
+  { name: 'Fashion', icon: '👕' },
+  { name: 'Grocery', icon: '🥑' },
+  { name: 'Accessories', icon: '⌚' },
+  { name: 'Home & Kitchen', icon: '🍳' },
+  { name: 'Books', icon: '📚' },
+  { name: 'Sports & Fitness', icon: '🏃' },
+  { name: 'Beauty & Personal Care', icon: '✨' }
 ]
 
 const AI_SUGGESTIONS = [
@@ -24,13 +24,17 @@ const AI_SUGGESTIONS = [
 ]
 
 export default function Marketplace() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const initialSearch = searchParams.get('search') || ''
+  const initialCategory = searchParams.get('category') || 'All'
+
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   
   // Filter & Search states
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState('All')
+  const [searchTerm, setSearchTerm] = useState(initialSearch)
+  const [selectedCategory, setSelectedCategory] = useState(initialCategory)
   const [sortBy, setSortBy] = useState('newest')
   const [minPrice, setMinPrice] = useState('')
   const [maxPrice, setMaxPrice] = useState('')
@@ -45,6 +49,18 @@ export default function Marketplace() {
 
   const { isAuthenticated, user, refreshCartCount } = useAuth()
   const navigate = useNavigate()
+
+  // Sync state if URL query params change
+  useEffect(() => {
+    const urlCategory = searchParams.get('category')
+    const urlSearch = searchParams.get('search')
+    if (urlCategory && urlCategory !== selectedCategory) {
+      setSelectedCategory(urlCategory)
+    }
+    if (urlSearch !== null && urlSearch !== searchTerm) {
+      setSearchTerm(urlSearch)
+    }
+  }, [searchParams])
 
   const fetchProducts = async () => {
     setLoading(true)
@@ -87,9 +103,9 @@ export default function Marketplace() {
 
     try {
       await apiRequest('/cart', 'POST', { productId, quantity: 1 })
-      setCartMsg(`✓ "${productName || 'Item'}" added to cart!`)
+      setCartMsg(`✓ "${productName || 'Item'}" added to your cart!`)
       if (refreshCartCount) refreshCartCount()
-      setTimeout(() => setCartMsg(''), 3000)
+      setTimeout(() => setCartMsg(''), 3500)
     } catch (err) {
       alert(err.message || 'Failed to add item to cart')
     }
@@ -119,17 +135,18 @@ export default function Marketplace() {
     setMinPrice('')
     setMaxPrice('')
     setInStockOnly(false)
+    setSearchParams({})
   }
 
   return (
     <div className="marketplace-container animate-fade-up">
-      {/* Page Header */}
+      {/* Top Banner & Header */}
       <div className="marketplace-header-row">
         <div>
-          <span className="section-subtitle">MULTI-VENDOR CATALOG</span>
+          <span className="section-subtitle">AUTHENTIC MULTI-VENDOR COMMERCE</span>
           <h1 className="marketplace-title">Explore Marketplace</h1>
           <p className="marketplace-subtitle">
-            Authentic products from verified independent vendors across India.
+            Curated products directly from approved, independent stores across India.
           </p>
         </div>
 
@@ -143,7 +160,14 @@ export default function Marketplace() {
         </button>
       </div>
 
-      {cartMsg && <div className="toast-success">{cartMsg}</div>}
+      {cartMsg && (
+        <div className="toast-success" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span>{cartMsg}</span>
+          <Link to="/cart" style={{ color: '#047857', fontWeight: 700, textDecoration: 'underline', fontSize: '0.9rem' }}>
+            View Cart →
+          </Link>
+        </div>
+      )}
 
       {/* AI Assistant Interactive Drawer */}
       {aiOpen && (
@@ -152,14 +176,14 @@ export default function Marketplace() {
             <div className="ai-header-left">
               <span className="ai-bot-avatar">🤖</span>
               <div>
-                <h3>VendiSphere AI Shopping Assistant</h3>
+                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800 }}>VendiSphere AI Shopping Assistant</h3>
                 <span className="ai-badge-verified">Verified Real Catalog Recommendations</span>
               </div>
             </div>
             <button className="close-btn" onClick={() => setAiOpen(false)} aria-label="Close AI Drawer">✕</button>
           </div>
           
-          <p className="ai-card-desc">
+          <p className="ai-card-desc" style={{ color: '#475569', fontSize: '0.92rem', margin: 0 }}>
             Ask natural language questions like product categories, features, or budget limits (e.g., "Find noise-cancelling headphones under ₹10,000").
           </p>
 
@@ -194,7 +218,14 @@ export default function Marketplace() {
             </button>
           </form>
 
-          {aiResponse && (
+          {aiLoading && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '1rem', background: '#f8fafc', borderRadius: '12px' }}>
+              <div className="spinner" style={{ width: '20px', height: '20px' }}></div>
+              <span style={{ fontSize: '0.9rem', color: '#4f46e5', fontWeight: 600 }}>Analyzing marketplace inventory and budget criteria...</span>
+            </div>
+          )}
+
+          {aiResponse && !aiLoading && (
             <div className="ai-response-box animate-fade-up">
               <div className="ai-reply-bubble">
                 <p className="ai-reply">{aiResponse.reply}</p>
@@ -242,15 +273,15 @@ export default function Marketplace() {
       {/* Main Filter & Search Control Bar */}
       <div className="marketplace-controls-bar">
         {/* Search input with live clear */}
-        <div className="search-box">
-          <svg className="search-box-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <div className="search-box" style={{ flex: '1 1 280px' }}>
+          <svg className="search-box-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="8"></circle>
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
           <input
             type="text"
             className="search-input"
-            placeholder="Search products by title, category, or features..."
+            placeholder="Search products by name, category, or features..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -263,7 +294,7 @@ export default function Marketplace() {
 
         {/* Sorting Dropdown */}
         <div className="filter-select-group">
-          <label className="filter-label">Sort by:</label>
+          <label className="filter-label">Sort:</label>
           <select 
             value={sortBy} 
             onChange={(e) => setSortBy(e.target.value)}
@@ -272,7 +303,7 @@ export default function Marketplace() {
             <option value="newest">Newest Arrivals</option>
             <option value="price_asc">Price: Low to High</option>
             <option value="price_desc">Price: High to Low</option>
-            <option value="rating_desc">Highest Customer Rating</option>
+            <option value="rating_desc">Highest Rated</option>
           </select>
         </div>
 
@@ -312,38 +343,61 @@ export default function Marketplace() {
         {/* Reset button if any filter is active */}
         {(searchTerm || selectedCategory !== 'All' || minPrice || maxPrice || inStockOnly || sortBy !== 'newest') && (
           <button className="btn-secondary btn-sm" onClick={handleResetFilters}>
-            Reset Filters
+            Reset
           </button>
         )}
       </div>
 
-      {/* Category Pills Slider */}
+      {/* Category Pills Slider with Icons */}
       <div className="category-scroll-wrapper">
         <div className="category-filters">
-          {CATEGORIES.map((category) => (
+          {CATEGORIES.map((cat) => (
             <button
-              key={category}
-              className={`category-btn ${selectedCategory === category ? 'active' : ''}`}
-              onClick={() => setSelectedCategory(category)}
+              key={cat.name}
+              className={`category-btn ${selectedCategory === cat.name ? 'active' : ''}`}
+              onClick={() => {
+                setSelectedCategory(cat.name)
+                if (cat.name === 'All') {
+                  setSearchParams({})
+                } else {
+                  setSearchParams({ category: cat.name })
+                }
+              }}
             >
-              {category}
+              <span style={{ marginRight: '6px' }}>{cat.icon}</span>
+              <span>{cat.name}</span>
             </button>
           ))}
         </div>
       </div>
 
-      {/* Results Count & Product Grid */}
-      <div className="catalog-meta-row">
+      {/* Results Count Meta */}
+      <div className="catalog-meta-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span className="catalog-count-text">
           Showing <strong>{products.length}</strong> {products.length === 1 ? 'product' : 'products'}
-          {selectedCategory !== 'All' ? ` in ${selectedCategory}` : ''}
+          {selectedCategory !== 'All' ? ` in "${selectedCategory}"` : ''}
+          {searchTerm ? ` matching "${searchTerm}"` : ''}
         </span>
       </div>
 
+      {/* Product Grid or Skeleton Loaders */}
       {loading ? (
-        <div className="loading-spinner-container">
-          <div className="spinner"></div>
-          <p>Finding the best marketplace products for you...</p>
+        <div className="product-grid">
+          {[1, 2, 3, 4, 5, 6].map((n) => (
+            <div key={n} className="skeleton-card">
+              <div className="skeleton-shimmer skeleton-img"></div>
+              <div className="skeleton-body">
+                <div className="skeleton-shimmer skeleton-pill"></div>
+                <div className="skeleton-shimmer skeleton-title"></div>
+                <div className="skeleton-shimmer skeleton-text"></div>
+                <div className="skeleton-shimmer skeleton-text short"></div>
+                <div className="skeleton-footer">
+                  <div className="skeleton-shimmer skeleton-price"></div>
+                  <div className="skeleton-shimmer skeleton-btn"></div>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       ) : error ? (
         <div className="error-message">{error}</div>
@@ -385,7 +439,7 @@ export default function Marketplace() {
                 </p>
 
                 <div className="product-card-vendor">
-                  <span>Store: <strong>{product.vendor?.name || 'Verified Vendor'}</strong></span>
+                  <span>Store: <strong>{product.vendor?.name || 'Verified Partner'}</strong></span>
                 </div>
 
                 <div className="product-card-footer">
@@ -404,10 +458,12 @@ export default function Marketplace() {
           ))}
         </div>
       ) : (
-        <div className="empty-results">
-          <div className="empty-icon">🔍</div>
+        <div className="empty-results" style={{ background: '#ffffff', borderRadius: '20px', border: '1px solid #e2e8f0' }}>
+          <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.75rem' }}>
+            🔍
+          </div>
           <h2>No matching products found</h2>
-          <p>We couldn't find any items matching your selected criteria. Try adjusting your filters or price range.</p>
+          <p>We couldn't find any items matching your criteria. Try adjusting your search keywords, category, or price range.</p>
           <button className="btn-primary" onClick={handleResetFilters}>
             Reset All Filters
           </button>

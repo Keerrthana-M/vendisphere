@@ -64,14 +64,14 @@ export default function AddEditProduct() {
     try {
       if (isEditMode) {
         await apiRequest(`/products/${id}`, 'PUT', formData)
-        alert('Product updated successfully!')
+        alert('✓ Product updated successfully!')
       } else {
         await apiRequest('/products', 'POST', formData)
-        alert('Product created successfully!')
+        alert('✓ Product created successfully!')
       }
       navigate('/vendor/products')
     } catch (err) {
-      setError(err.message || 'Failed to save product')
+      setError(err.message || 'Failed to save product. Please check all fields.')
     } finally {
       setSubmitting(false)
     }
@@ -79,9 +79,11 @@ export default function AddEditProduct() {
 
   if (loading) {
     return (
-      <div className="loading-spinner-container">
-        <div className="spinner"></div>
-        <p>Loading product details...</p>
+      <div className="form-page-container animate-fade-up">
+        <h1 className="page-title">{isEditMode ? 'Edit Product' : 'Add New Product'}</h1>
+        <div className="skeleton-card" style={{ height: '360px', marginTop: '1.5rem' }}>
+          <div className="skeleton-shimmer" style={{ width: '100%', height: '100%' }}></div>
+        </div>
       </div>
     )
   }
@@ -90,20 +92,28 @@ export default function AddEditProduct() {
     <div className="form-page-container animate-fade-up">
       <div className="dashboard-header">
         <div>
-          <h1 className="page-title">{isEditMode ? 'Edit Product' : 'Add New Product'}</h1>
-          <p className="page-subtitle">
-            {isEditMode ? 'Update product information and stock.' : 'Create a new marketplace product listing.'}
+          <span className="section-subtitle">PRODUCT MANAGEMENT</span>
+          <h1 className="page-title" style={{ margin: '4px 0 0 0' }}>
+            {isEditMode ? 'Edit Product Listing' : 'Create New Product'}
+          </h1>
+          <p className="page-subtitle" style={{ margin: '4px 0 0 0' }}>
+            {isEditMode ? 'Update product information, pricing, or stock level.' : 'Add an item to be discoverable in the VendiSphere marketplace.'}
           </p>
         </div>
 
         <Link to="/vendor/products" className="btn-secondary">
-          ← Back to Products
+          ← Back to Catalog
         </Link>
       </div>
 
-      {error && <div className="error-message">{error}</div>}
+      {error && (
+        <div className="error-message" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1.5rem' }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          <span>{error}</span>
+        </div>
+      )}
 
-      <div className="auth-card form-card-wide">
+      <div className="auth-card form-card-wide" style={{ background: '#ffffff', border: '1px solid #e2e8f0', boxShadow: '0 4px 16px rgba(0, 0, 0, 0.03)' }}>
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
             <label className="form-label">Product Name *</label>
@@ -111,7 +121,7 @@ export default function AddEditProduct() {
               type="text"
               name="name"
               className="form-input"
-              placeholder="e.g. Acoustic Pro Wireless Headphones"
+              placeholder="e.g. Acoustic Pro Wireless Noise-Cancelling Headphones"
               value={formData.name}
               onChange={handleChange}
               required
@@ -135,14 +145,14 @@ export default function AddEditProduct() {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Price (₹) *</label>
+              <label className="form-label">Unit Price (₹) *</label>
               <input 
                 type="number"
                 step="0.01"
                 min="0"
                 name="price"
                 className="form-input"
-                placeholder="99.99"
+                placeholder="4999.00"
                 value={formData.price}
                 onChange={handleChange}
                 required
@@ -152,7 +162,7 @@ export default function AddEditProduct() {
 
           <div className="form-row-2">
             <div className="form-group">
-              <label className="form-label">Initial Stock Quantity *</label>
+              <label className="form-label">Available Stock Quantity *</label>
               <input 
                 type="number"
                 min="0"
@@ -171,7 +181,7 @@ export default function AddEditProduct() {
                 type="url"
                 name="imageUrl"
                 className="form-input"
-                placeholder="https://images.unsplash.com/..."
+                placeholder="https://images.unsplash.com/photo-..."
                 value={formData.imageUrl}
                 onChange={handleChange}
                 required
@@ -179,13 +189,29 @@ export default function AddEditProduct() {
             </div>
           </div>
 
+          {/* Live Image Preview */}
+          {formData.imageUrl && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '10px 14px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+              <img 
+                src={formData.imageUrl} 
+                alt="Product preview" 
+                style={{ width: '56px', height: '56px', objectFit: 'cover', borderRadius: '8px' }}
+                onError={(e) => { e.target.style.display = 'none' }}
+              />
+              <div>
+                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#10b981' }}>✓ Image Preview Active</span>
+                <span style={{ display: 'block', fontSize: '0.78rem', color: '#64748b' }}>Make sure image is sharp and publicly accessible.</span>
+              </div>
+            </div>
+          )}
+
           <div className="form-group">
-            <label className="form-label">Product Description *</label>
+            <label className="form-label">Product Description &amp; Features *</label>
             <textarea 
               name="description"
               rows="4"
               className="form-input"
-              placeholder="Detailed description of features, materials, and warranty..."
+              placeholder="Highlight technical features, included accessories, dimensions, warranty, or battery life..."
               value={formData.description}
               onChange={handleChange}
               required
@@ -197,7 +223,7 @@ export default function AddEditProduct() {
               Cancel
             </Link>
             <button type="submit" className="btn-primary" disabled={submitting}>
-              {submitting ? 'Saving...' : isEditMode ? 'Update Product' : 'Create Product'}
+              {submitting ? 'Saving Product...' : isEditMode ? 'Update Product' : 'Publish Product'}
             </button>
           </div>
         </form>

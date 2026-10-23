@@ -23,9 +23,11 @@ export default function VendorInsights() {
 
   if (loading) {
     return (
-      <div className="loading-spinner-container">
-        <div className="spinner"></div>
-        <p>Running VendiSphere AI performance audit...</p>
+      <div className="ai-insights-container animate-fade-up">
+        <h1 className="page-title">✨ AI Business Insights</h1>
+        <div className="skeleton-card" style={{ height: '320px', marginTop: '1.5rem' }}>
+          <div className="skeleton-shimmer" style={{ width: '100%', height: '100%' }}></div>
+        </div>
       </div>
     )
   }
@@ -34,8 +36,11 @@ export default function VendorInsights() {
     <div className="ai-insights-container animate-fade-up">
       <div className="dashboard-header">
         <div>
-          <h1 className="page-title">✨ AI Business Insights & Recommendations</h1>
-          <p className="page-subtitle">Automated intelligence analyzing store performance, inventory levels, and growth tips.</p>
+          <span className="section-subtitle">STORE INTELLIGENCE ENGINE</span>
+          <h1 className="page-title" style={{ margin: '4px 0 0 0' }}>AI Business Insights &amp; Recommendations</h1>
+          <p className="page-subtitle" style={{ margin: '4px 0 0 0' }}>
+            Machine intelligence evaluating sales velocity, inventory risks, and catalog growth opportunities.
+          </p>
         </div>
 
         <button className="btn-primary" onClick={fetchInsights}>
@@ -44,14 +49,19 @@ export default function VendorInsights() {
       </div>
 
       <div className="ai-insights-card">
-        <div className="ai-card-badge">VENDISPHERE AI INSIGHT ENGINE</div>
-        <h2>{insightsData?.summary || 'Store Analysis Overview'}</h2>
-        <p className="ai-timestamp">Last generated: {new Date(insightsData?.generatedAt || Date.now()).toLocaleString()}</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+          <div className="ai-card-badge">VENDISPHERE AI ADVISOR</div>
+          <span className="ai-timestamp">Audit Generated: {new Date(insightsData?.generatedAt || Date.now()).toLocaleString()}</span>
+        </div>
+
+        <h2 style={{ margin: '0.5rem 0', fontSize: '1.45rem', fontWeight: 800, color: '#0f172a' }}>
+          {insightsData?.summary || 'Store Performance Audit'}
+        </h2>
 
         <div className="insights-list">
           {insightsData?.insights?.map((item, idx) => (
             <div key={idx} className="insight-item-box">
-              <p>{item}</p>
+              <p style={{ margin: 0 }}>{item}</p>
             </div>
           ))}
         </div>
