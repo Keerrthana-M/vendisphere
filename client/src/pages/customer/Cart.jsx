@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { apiRequest } from '../../services/api'
+import { useAuth } from '../../context/AuthContext'
 import { formatINR } from '../../utils/formatINR'
 
 export default function Cart() {
   const [cart, setCart] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const { refreshCartCount } = useAuth()
   const navigate = useNavigate()
 
   const fetchCart = async () => {
@@ -29,6 +31,7 @@ export default function Cart() {
     try {
       const updatedData = await apiRequest(`/cart/${itemId}`, 'PUT', { quantity: newQuantity })
       setCart(updatedData)
+      if (refreshCartCount) refreshCartCount()
     } catch (err) {
       alert(err.message || 'Failed to update quantity')
     }
@@ -38,6 +41,7 @@ export default function Cart() {
     try {
       const updatedData = await apiRequest(`/cart/${itemId}`, 'DELETE')
       setCart(updatedData)
+      if (refreshCartCount) refreshCartCount()
     } catch (err) {
       alert(err.message || 'Failed to remove item')
     }

@@ -55,6 +55,26 @@ export default function VendorInsights() {
             </div>
           ))}
         </div>
+
+        {insightsData?.recommendations && insightsData.recommendations.length > 0 && (
+          <div className="insights-recommendations-section">
+            <h3 className="rec-title">🎯 Actionable Growth Recommendations</h3>
+            <ul className="rec-list">
+              {insightsData.recommendations.map((rec, idx) => (
+                <li key={idx} className="rec-item">
+                  <span className="rec-bullet">→</span>
+                  <span>{rec}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {insightsData?.disclaimer && (
+          <div className="ai-disclaimer-note">
+            ℹ️ <em>{insightsData.disclaimer}</em>
+          </div>
+        )}
       </div>
     </div>
   )

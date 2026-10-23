@@ -15,8 +15,11 @@ export const getVendorInventory = async (req, res) => {
   try {
     const products = await Product.find({ vendor: req.user._id })
 
-    // Find all vendor order items to calculate average daily sales
-    const orders = await Order.find({ 'items.vendor': req.user._id })
+    // Find non-cancelled vendor orders to calculate true sales velocity
+    const orders = await Order.find({ 
+      'items.vendor': req.user._id,
+      status: { $ne: 'Cancelled' }
+    })
 
     const salesMap = {}
     let earliestOrderDate = new Date()
@@ -44,11 +47,18 @@ export const getVendorInventory = async (req, res) => {
       const avgDailySales = Number((totalSold / daysOperating).toFixed(2))
 
       let estimatedDaysStockout = null
-      let intelligenceNotice = 'Not enough sales data'
+      let intelligenceNotice = 'No order velocity recorded yet'
+      let suggestedReorder = 0
 
       if (avgDailySales > 0) {
         estimatedDaysStockout = Math.ceil(product.stock / avgDailySales)
-        intelligenceNotice = `Estimated stockout in approx. ${estimatedDaysStockout} day(s)`
+        intelligenceNotice = `Estimated stockout in ~${estimatedDaysStockout} day(s) at ${avgDailySales} units/day`
+        // 14-day supply model with a 5-unit safety buffer
+        const targetInventory = Math.ceil(avgDailySales * 14) + 5
+        suggestedReorder = Math.max(0, targetInventory - product.stock)
+      } else if (product.stock <= 5) {
+        intelligenceNotice = `Low stock (${product.stock} units). Consider initial batch restock.`
+        suggestedReorder = 10 - product.stock
       }
 
       const isLowStock = product.stock <= 5
@@ -62,9 +72,10 @@ export const getVendorInventory = async (req, res) => {
         totalSold,
         avgDailySales,
         estimatedDaysStockout,
+        suggestedReorder,
         intelligenceNotice,
         isLowStock,
-        status: isLowStock ? 'Low Stock' : 'In Stock'
+        status: product.stock === 0 ? 'Out of Stock' : isLowStock ? 'Low Stock' : 'In Stock'
       }
     })
 
@@ -77,13 +88,14 @@ export const getVendorInventory = async (req, res) => {
 export const getVendorAnalytics = async (req, res) => {
   try {
     const products = await Product.find({ vendor: req.user._id })
-    const orders = await Order.find({ 'items.vendor': req.user._id })
+    const allOrders = await Order.find({ 'items.vendor': req.user._id })
+    const activeOrders = allOrders.filter(o => o.status !== 'Cancelled')
 
     let totalRevenue = 0
     let productsSold = 0
     const productSalesCount = {}
 
-    orders.forEach(order => {
+    activeOrders.forEach(order => {
       order.items.forEach(item => {
         if (item.vendor.toString() === req.user._id.toString()) {
           totalRevenue += item.price * item.quantity
@@ -96,6 +108,7 @@ export const getVendorAnalytics = async (req, res) => {
     })
 
     const lowStockCount = products.filter(p => p.stock <= 5).length
+    const avgOrderValue = activeOrders.length > 0 ? totalRevenue / activeOrders.length : 0
 
     // Sort products by sales
     const topProducts = products.map(p => {
@@ -113,7 +126,9 @@ export const getVendorAnalytics = async (req, res) => {
 
     return res.json({
       totalRevenue: Number(totalRevenue.toFixed(2)),
-      totalOrders: orders.length,
+      totalOrders: activeOrders.length,
+      cancelledOrders: allOrders.length - activeOrders.length,
+      averageOrderValue: Number(avgOrderValue.toFixed(2)),
       productsSold,
       totalProducts: products.length,
       lowStockCount,

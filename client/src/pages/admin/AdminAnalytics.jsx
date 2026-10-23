@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { apiRequest } from '../../services/api'
+import { formatINR } from '../../utils/formatINR'
 
 export default function AdminAnalytics() {
   const [analytics, setAnalytics] = useState(null)
@@ -32,8 +33,8 @@ export default function AdminAnalytics() {
 
       <div className="metrics-grid">
         <div className="metric-card">
-          <span className="metric-title">Gross Gross Platform Revenue</span>
-          <span className="metric-value">${analytics?.totalPlatformRevenue?.toFixed(2) || '0.00'}</span>
+          <span className="metric-title">Gross Platform Revenue</span>
+          <span className="metric-value">{formatINR(analytics?.totalPlatformRevenue || 0)}</span>
         </div>
 
         <div className="metric-card">

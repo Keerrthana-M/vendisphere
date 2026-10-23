@@ -20,7 +20,16 @@ export default function AddEditProduct() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
-  const categories = ['Electronics', 'Fashion', 'Grocery', 'Accessories', 'Home & Kitchen', 'Books']
+  const categories = [
+    'Electronics',
+    'Fashion',
+    'Grocery',
+    'Accessories',
+    'Home & Kitchen',
+    'Books',
+    'Sports & Fitness',
+    'Beauty & Personal Care'
+  ]
 
   useEffect(() => {
     if (isEditMode) {

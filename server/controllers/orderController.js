@@ -6,27 +6,37 @@ export const createOrder = async (req, res) => {
   try {
     const { shippingAddress } = req.body
 
-    if (!shippingAddress || !shippingAddress.fullName || !shippingAddress.address || !shippingAddress.city || !shippingAddress.state || !shippingAddress.postalCode || !shippingAddress.phone) {
+    if (
+      !shippingAddress ||
+      !shippingAddress.fullName ||
+      !shippingAddress.address ||
+      !shippingAddress.city ||
+      !shippingAddress.state ||
+      !shippingAddress.postalCode ||
+      !shippingAddress.phone
+    ) {
       return res.status(400).json({ message: 'Full shipping address details are required' })
+    }
+
+    const cleanPhone = shippingAddress.phone.replace(/[\s\-\(\)]/g, '')
+    if (cleanPhone.length < 10) {
+      return res.status(400).json({ message: 'Please provide a valid 10-digit phone number' })
     }
 
     const cart = await Cart.findOne({ user: req.user._id }).populate('items.product')
 
-    if (!cart || cart.items.length === 0) {
-      return res.status(400).json({ message: 'Cart is empty' })
+    if (!cart || !cart.items || cart.items.length === 0) {
+      return res.status(400).json({ message: 'Your shopping cart is empty' })
     }
 
+    // 1. Pre-validate all items exist and calculate authoritative total
     let totalAmount = 0
     const orderItems = []
 
     for (const item of cart.items) {
       const product = item.product
       if (!product) {
-        return res.status(404).json({ message: 'One or more products in your cart no longer exist' })
-      }
-
-      if (product.stock < item.quantity) {
-        return res.status(400).json({ message: `Insufficient stock for "${product.name}". Only ${product.stock} available.` })
+        return res.status(404).json({ message: 'One or more products in your cart no longer exist. Please update your cart.' })
       }
 
       totalAmount += product.price * item.quantity
@@ -38,22 +48,50 @@ export const createOrder = async (req, res) => {
       })
     }
 
-    const order = await Order.create({
-      user: req.user._id,
-      items: orderItems,
-      totalAmount,
-      shippingAddress,
-      status: 'Placed'
-    })
-
-    // Reduce product stock
+    // 2. Atomic stock reservation with automatic rollback on race conditions
+    const decrementedItems = []
     for (const item of cart.items) {
-      await Product.findByIdAndUpdate(item.product._id, {
-        $inc: { stock: -item.quantity }
+      const updatedProduct = await Product.findOneAndUpdate(
+        { _id: item.product._id, stock: { $gte: item.quantity } },
+        { $inc: { stock: -item.quantity } },
+        { new: true }
+      )
+
+      if (!updatedProduct) {
+        // Rollback any items that were already decremented in this transaction
+        for (const rolledItem of decrementedItems) {
+          await Product.findByIdAndUpdate(rolledItem.productId, {
+            $inc: { stock: rolledItem.quantity }
+          })
+        }
+        return res.status(400).json({
+          message: `Insufficient stock for "${item.product.name}". The remaining stock was reserved by another buyer.`
+        })
+      }
+
+      decrementedItems.push({
+        productId: item.product._id,
+        quantity: item.quantity
       })
     }
 
-    // Clear cart
+    // 3. Create persistent Order document
+    const order = await Order.create({
+      user: req.user._id,
+      items: orderItems,
+      totalAmount: Number(totalAmount.toFixed(2)),
+      shippingAddress: {
+        fullName: shippingAddress.fullName.trim(),
+        address: shippingAddress.address.trim(),
+        city: shippingAddress.city.trim(),
+        state: shippingAddress.state.trim(),
+        postalCode: shippingAddress.postalCode.trim(),
+        phone: cleanPhone
+      },
+      status: 'Placed'
+    })
+
+    // 4. Safely clear user's cart
     cart.items = []
     await cart.save()
 
@@ -146,6 +184,22 @@ export const updateOrderStatus = async (req, res) => {
 
     if (!isVendorInOrder && !isAdmin) {
       return res.status(403).json({ message: 'Unauthorized to update this order' })
+    }
+
+    const previousStatus = order.status
+
+    // If order was cancelled and somebody tries to un-cancel, prevent unless admin
+    if (previousStatus === 'Cancelled' && status !== 'Cancelled' && !isAdmin) {
+      return res.status(400).json({ message: 'Cannot reactivate a cancelled order' })
+    }
+
+    // If order transitions to Cancelled from an active status, restore product inventory
+    if (status === 'Cancelled' && previousStatus !== 'Cancelled') {
+      for (const item of order.items) {
+        await Product.findByIdAndUpdate(item.product, {
+          $inc: { stock: item.quantity }
+        })
+      }
     }
 
     order.status = status

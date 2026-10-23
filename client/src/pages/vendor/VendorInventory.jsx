@@ -55,6 +55,7 @@ export default function VendorInventory() {
                 <th>Total Sold</th>
                 <th>Avg. Daily Sales</th>
                 <th>Smart Stockout Prediction</th>
+                <th>Suggested Reorder</th>
                 <th>Status</th>
               </tr>
             </thead>
@@ -77,7 +78,12 @@ export default function VendorInventory() {
                     </span>
                   </td>
                   <td>
-                    <span className={`status-badge ${item.isLowStock ? 'status-lowstock' : 'status-instock'}`}>
+                    <strong className={item.suggestedReorder > 0 ? 'text-highlight' : ''}>
+                      {item.suggestedReorder > 0 ? `+${item.suggestedReorder} units` : 'Adequate'}
+                    </strong>
+                  </td>
+                  <td>
+                    <span className={`status-badge ${item.status === 'Out of Stock' ? 'status-cancelled' : item.isLowStock ? 'status-lowstock' : 'status-instock'}`}>
                       {item.status}
                     </span>
                   </td>
@@ -85,6 +91,9 @@ export default function VendorInventory() {
               ))}
             </tbody>
           </table>
+          <p className="table-caption-note">
+            * <em>Suggested reorder quantity calculated using a 14-day sales velocity projection plus a 5-unit safety stock buffer: Target = (Avg Daily Sales × 14) + 5 - Current Stock.</em>
+          </p>
         </div>
       ) : (
         <div className="empty-results">

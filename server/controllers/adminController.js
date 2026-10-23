@@ -64,8 +64,9 @@ export const getAdminAnalytics = async (req, res) => {
     const totalProducts = await Product.countDocuments({})
     const totalOrders = await Order.countDocuments({})
 
-    const orders = await Order.find({})
-    const totalPlatformRevenue = orders.reduce((sum, order) => sum + (order.totalAmount || 0), 0)
+    // Exclude cancelled orders from platform gross revenue
+    const activeOrders = await Order.find({ status: { $ne: 'Cancelled' } })
+    const totalPlatformRevenue = activeOrders.reduce((sum, order) => sum + (order.totalAmount || 0), 0)
 
     return res.json({
       totalCustomers,

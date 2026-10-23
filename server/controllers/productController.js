@@ -1,16 +1,17 @@
 import { Product } from '../models/Product.js'
 import { User } from '../models/User.js'
 import { VendorProfile } from '../models/VendorProfile.js'
+import { PRODUCT_CATEGORIES } from '../config/constants.js'
 
 export const getProducts = async (req, res) => {
   try {
-    const { search, category, vendor } = req.query
+    const { search, category, vendor, minPrice, maxPrice, inStockOnly, sort } = req.query
     let filter = {}
 
-    if (search) {
+    if (search && search.trim() !== '') {
       filter.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } }
+        { name: { $regex: search.trim(), $options: 'i' } },
+        { description: { $regex: search.trim(), $options: 'i' } }
       ]
     }
 
@@ -22,9 +23,36 @@ export const getProducts = async (req, res) => {
       filter.vendor = vendor
     }
 
+    if (minPrice !== undefined && minPrice !== '' || maxPrice !== undefined && maxPrice !== '') {
+      filter.price = {}
+      if (minPrice !== undefined && minPrice !== '') {
+        const minVal = Number(minPrice)
+        if (!isNaN(minVal)) filter.price.$gte = minVal
+      }
+      if (maxPrice !== undefined && maxPrice !== '') {
+        const maxVal = Number(maxPrice)
+        if (!isNaN(maxVal)) filter.price.$lte = maxVal
+      }
+    }
+
+    if (inStockOnly === 'true' || inStockOnly === true) {
+      filter.stock = { $gt: 0 }
+    }
+
+    let sortOptions = { createdAt: -1 }
+    if (sort === 'price_asc') {
+      sortOptions = { price: 1 }
+    } else if (sort === 'price_desc') {
+      sortOptions = { price: -1 }
+    } else if (sort === 'rating_desc') {
+      sortOptions = { rating: -1, reviewCount: -1 }
+    } else if (sort === 'newest') {
+      sortOptions = { createdAt: -1 }
+    }
+
     const products = await Product.find(filter)
       .populate('vendor', 'name email')
-      .sort({ createdAt: -1 })
+      .sort(sortOptions)
 
     return res.json(products)
   } catch (error) {
@@ -59,13 +87,30 @@ export const createProduct = async (req, res) => {
       return res.status(400).json({ message: 'All product fields are required' })
     }
 
+    if (!PRODUCT_CATEGORIES.includes(category)) {
+      return res.status(400).json({ 
+        message: `Invalid category "${category}". Must be one of: ${PRODUCT_CATEGORIES.join(', ')}` 
+      })
+    }
+
+    const numPrice = Number(price)
+    const numStock = Number(stock)
+
+    if (isNaN(numPrice) || numPrice < 0) {
+      return res.status(400).json({ message: 'Price must be a positive number' })
+    }
+
+    if (isNaN(numStock) || numStock < 0 || !Number.isInteger(numStock)) {
+      return res.status(400).json({ message: 'Stock must be a non-negative integer' })
+    }
+
     const product = await Product.create({
-      name,
-      description,
+      name: name.trim(),
+      description: description.trim(),
       category,
-      price: Number(price),
-      imageUrl,
-      stock: Number(stock),
+      price: numPrice,
+      imageUrl: imageUrl.trim(),
+      stock: numStock,
       vendor: req.user._id
     })
 
@@ -89,12 +134,35 @@ export const updateProduct = async (req, res) => {
 
     const { name, description, category, price, imageUrl, stock } = req.body
 
-    if (name) product.name = name
-    if (description) product.description = description
-    if (category) product.category = category
-    if (price !== undefined) product.price = Number(price)
-    if (imageUrl) product.imageUrl = imageUrl
-    if (stock !== undefined) product.stock = Number(stock)
+    if (category) {
+      if (!PRODUCT_CATEGORIES.includes(category)) {
+        return res.status(400).json({
+          message: `Invalid category "${category}". Must be one of: ${PRODUCT_CATEGORIES.join(', ')}`
+        })
+      }
+      product.category = category
+    }
+
+    if (name) product.name = name.trim()
+    if (description) product.description = description.trim()
+    if (imageUrl) product.imageUrl = imageUrl.trim()
+
+    if (price !== undefined) {
+      const numPrice = Number(price)
+      if (isNaN(numPrice) || numPrice < 0) {
+        return res.status(400).json({ message: 'Price must be a positive number' })
+      }
+      product.price = numPrice
+    }
+
+    if (stock !== undefined) {
+      const numStock = Number(stock)
+      if (isNaN(numStock) || numStock < 0 || !Number.isInteger(numStock)) {
+        return res.status(400).json({ message: 'Stock must be a non-negative integer' })
+      }
+      product.stock = numStock
+    }
+
     product.updatedAt = Date.now()
 
     await product.save()

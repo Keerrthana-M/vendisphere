@@ -1,4 +1,5 @@
 import mongoose from 'mongoose'
+import { PRODUCT_CATEGORIES } from '../config/constants.js'
 
 const productSchema = new mongoose.Schema({
   name: {
@@ -12,7 +13,11 @@ const productSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    required: [true, 'Category is required']
+    required: [true, 'Category is required'],
+    enum: {
+      values: PRODUCT_CATEGORIES,
+      message: '{VALUE} is not a valid category'
+    }
   },
   price: {
     type: Number,

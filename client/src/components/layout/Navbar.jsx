@@ -2,7 +2,7 @@ import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 
 export const Navbar = () => {
-  const { user, isAuthenticated, logout } = useAuth()
+  const { user, isAuthenticated, logout, cartCount } = useAuth()
   const navigate = useNavigate()
 
   const handleLogout = async () => {
@@ -49,8 +49,9 @@ export const Navbar = () => {
               <NavLink to="/marketplace" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
                 Marketplace
               </NavLink>
-              <NavLink to="/cart" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+              <NavLink to="/cart" className={({ isActive }) => isActive ? 'nav-link active nav-link-cart' : 'nav-link nav-link-cart'}>
                 Cart
+                {cartCount > 0 && <span className="nav-cart-badge">{cartCount}</span>}
               </NavLink>
               <NavLink to="/orders" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
                 Orders

@@ -10,7 +10,7 @@ export default function Checkout() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
-  const { user } = useAuth()
+  const { user, refreshCartCount } = useAuth()
   const navigate = useNavigate()
 
   const [shippingAddress, setShippingAddress] = useState({
@@ -56,7 +56,7 @@ export default function Checkout() {
 
     try {
       const res = await apiRequest('/orders', 'POST', { shippingAddress })
-      alert(`Order placed successfully! Order ID: ${res.order._id}`)
+      if (refreshCartCount) refreshCartCount()
       navigate(`/orders/${res.order._id}`)
     } catch (err) {
       setError(err.message || 'Failed to place order. Please try again.')

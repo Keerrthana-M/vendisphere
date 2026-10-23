@@ -6,13 +6,28 @@ const AuthContext = createContext()
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [cartCount, setCartCount] = useState(0)
+
+  const refreshCartCount = async () => {
+    try {
+      const data = await apiRequest('/cart')
+      const totalItems = data?.items?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0
+      setCartCount(totalItems)
+    } catch {
+      setCartCount(0)
+    }
+  }
 
   const checkAuth = async () => {
     try {
       const data = await apiRequest('/auth/me')
       setUser(data.user)
+      if (data.user?.role === 'customer') {
+        refreshCartCount()
+      }
     } catch (error) {
       setUser(null)
+      setCartCount(0)
     } finally {
       setLoading(false)
     }
@@ -27,6 +42,9 @@ export const AuthProvider = ({ children }) => {
     try {
       const data = await apiRequest('/auth/login', 'POST', { email, password })
       setUser(data.user)
+      if (data.user?.role === 'customer') {
+        refreshCartCount()
+      }
       return data.user
     } catch (error) {
       throw error
@@ -55,6 +73,7 @@ export const AuthProvider = ({ children }) => {
       console.error('Logout error:', error)
     } finally {
       setUser(null)
+      setCartCount(0)
     }
   }
 
@@ -63,6 +82,8 @@ export const AuthProvider = ({ children }) => {
       value={{
         user,
         loading,
+        cartCount,
+        refreshCartCount,
         isAuthenticated: !!user,
         login,
         register,

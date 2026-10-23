@@ -5,7 +5,7 @@ import { generateShoppingAssistantResponse, generateVendorInsightsResponse } fro
 export const shoppingAssistant = async (req, res) => {
   try {
     const { query } = req.body
-    const availableProducts = await Product.find({}).select('name category description price imageUrl rating')
+    const availableProducts = await Product.find({}).select('name category description price imageUrl rating stock vendor')
     const response = await generateShoppingAssistantResponse(query, availableProducts)
     return res.json(response)
   } catch (error) {
@@ -19,12 +19,13 @@ export const shoppingAssistant = async (req, res) => {
 export const vendorInsights = async (req, res) => {
   try {
     const products = await Product.find({ vendor: req.user._id })
-    const orders = await Order.find({ 'items.vendor': req.user._id })
+    const allOrders = await Order.find({ 'items.vendor': req.user._id })
+    const activeOrders = allOrders.filter(o => o.status !== 'Cancelled')
 
     let totalRevenue = 0
-    let totalOrders = orders.length
+    let totalOrders = activeOrders.length
 
-    orders.forEach(o => {
+    activeOrders.forEach(o => {
       o.items.forEach(item => {
         if (item.vendor.toString() === req.user._id.toString()) {
           totalRevenue += item.price * item.quantity

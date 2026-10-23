@@ -19,7 +19,7 @@ export default function ProductDetails() {
   const [reviewSubmitting, setReviewSubmitting] = useState(false)
   const [reviewError, setReviewError] = useState('')
 
-  const { isAuthenticated, user } = useAuth()
+  const { isAuthenticated, user, refreshCartCount } = useAuth()
   const navigate = useNavigate()
 
   const fetchProductData = async () => {
@@ -53,7 +53,8 @@ export default function ProductDetails() {
 
     try {
       await apiRequest('/cart', 'POST', { productId: product._id, quantity })
-      setActionMsg(`${quantity} item(s) added to cart!`)
+      setActionMsg(`✓ ${quantity} item(s) added to cart!`)
+      if (refreshCartCount) refreshCartCount()
       setTimeout(() => setActionMsg(''), 3500)
     } catch (err) {
       alert(err.message || 'Failed to add item to cart')
