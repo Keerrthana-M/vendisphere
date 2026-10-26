@@ -1,3 +1,5 @@
+// In development: Vite proxy forwards /api → localhost:5000 (no env var needed)
+// In production:  Set VITE_API_URL=https://your-backend.onrender.com/api in Vercel dashboard
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
 
 export const apiRequest = async (endpoint, method = 'GET', body = null) => {
@@ -6,7 +8,7 @@ export const apiRequest = async (endpoint, method = 'GET', body = null) => {
     headers: {
       'Content-Type': 'application/json'
     },
-    credentials: 'include' // Important for HTTP-only cookies
+    credentials: 'include' // Required for HTTP-only cookie auth
   }
 
   if (body) {
@@ -18,17 +20,7 @@ export const apiRequest = async (endpoint, method = 'GET', body = null) => {
   const url = `${cleanBase}${cleanEndpoint}`
 
   try {
-    let response
-    try {
-      response = await fetch(url, options)
-    } catch (networkErr) {
-      // If relative /api proxy fails, fallback directly to localhost:5000
-      if (!cleanBase.startsWith('http')) {
-        response = await fetch(`http://localhost:5000/api${cleanEndpoint}`, options)
-      } else {
-        throw networkErr
-      }
-    }
+    const response = await fetch(url, options)
 
     let data
     try {
@@ -44,7 +36,11 @@ export const apiRequest = async (endpoint, method = 'GET', body = null) => {
     return data
   } catch (error) {
     if (error.name === 'TypeError' && error.message.includes('fetch')) {
-      throw new Error('Unable to connect to the backend server. Please verify the API is running at http://localhost:5000')
+      throw new Error(
+        `Unable to connect to the backend. ` +
+        `In production, verify VITE_API_URL is set in your Vercel environment variables. ` +
+        `In development, ensure the backend is running on localhost:5000.`
+      )
     }
     throw error
   }

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { apiRequest } from '../../services/api'
 import { formatINR } from '../../utils/formatINR'
+import { AreaTrendChart } from '../../components/common/Charts'
 
 export default function AdminDashboard() {
   const [analytics, setAnalytics] = useState(null)
@@ -70,8 +71,17 @@ export default function AdminDashboard() {
           </span>
         </div>
       </div>
+      
+      {/* Platform GMV Velocity Trend Chart */}
+      <div style={{ marginTop: '2rem' }}>
+        <AreaTrendChart 
+          title="Platform Transaction Growth"
+          subtitle="Consolidated 6-month transaction volume curve across India"
+          height={230}
+        />
+      </div>
 
-      <div className="dashboard-quick-links">
+      <div className="dashboard-quick-links" style={{ marginTop: '2rem' }}>
         <Link to="/admin/vendors" className="quick-link-card">
           <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: '#e0e7ff', color: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', marginBottom: '4px' }}>
             🏪

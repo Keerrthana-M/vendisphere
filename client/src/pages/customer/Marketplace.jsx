@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { apiRequest } from '../../services/api'
 import { useAuth } from '../../context/AuthContext'
 import { formatINR } from '../../utils/formatINR'
+import QuickViewModal from '../../components/common/QuickViewModal'
 
 const CATEGORIES = [
   { name: 'All', icon: '✦' },
@@ -46,6 +47,7 @@ export default function Marketplace() {
   const [aiResponse, setAiResponse] = useState(null)
   const [aiLoading, setAiLoading] = useState(false)
   const [cartMsg, setCartMsg] = useState('')
+  const [quickViewProduct, setQuickViewProduct] = useState(null)
 
   const { isAuthenticated, user, refreshCartCount } = useAuth()
   const navigate = useNavigate()
@@ -91,7 +93,7 @@ export default function Marketplace() {
     return () => clearTimeout(delayDebounceFn)
   }, [searchTerm, selectedCategory, sortBy, minPrice, maxPrice, inStockOnly])
 
-  const handleAddToCart = async (productId, productName) => {
+  const handleAddToCart = async (productId, productName, quantity = 1) => {
     if (!isAuthenticated) {
       navigate('/login')
       return
@@ -102,8 +104,8 @@ export default function Marketplace() {
     }
 
     try {
-      await apiRequest('/cart', 'POST', { productId, quantity: 1 })
-      setCartMsg(`✓ "${productName || 'Item'}" added to your cart!`)
+      await apiRequest('/cart', 'POST', { productId, quantity })
+      setCartMsg(`✓ Added ${quantity > 1 ? `${quantity} items of ` : ''}"${productName || 'Item'}" to your cart!`)
       if (refreshCartCount) refreshCartCount()
       setTimeout(() => setCartMsg(''), 3500)
     } catch (err) {
@@ -403,59 +405,84 @@ export default function Marketplace() {
         <div className="error-message">{error}</div>
       ) : products.length > 0 ? (
         <div className="product-grid">
-          {products.map((product) => (
-            <div key={product._id} className="marketplace-product-card">
-              <div className="product-image-container">
-                <Link to={`/product/${product._id}`} className="product-image-link">
-                  <img 
-                    src={product.imageUrl} 
-                    alt={product.name} 
-                    className="product-card-img" 
-                    onError={(e) => { e.target.src = 'https://via.placeholder.com/400x300?text=Product+Image' }}
-                    loading="lazy"
-                  />
-                </Link>
-                <span className={`card-stock-pill ${product.stock === 0 ? 'stock-empty' : product.stock <= 5 ? 'stock-warning' : 'stock-available'}`}>
-                  {product.stock === 0 ? 'Out of Stock' : product.stock <= 5 ? `Only ${product.stock} left` : 'In Stock'}
-                </span>
-              </div>
+          {products.map((product) => {
+            const originalPrice = Math.round(product.price * 1.25)
+            return (
+              <div key={product._id} className="marketplace-product-card">
+                <div className="product-image-container">
+                  <Link to={`/product/${product._id}`} className="product-image-link">
+                    <img 
+                      src={product.imageUrl} 
+                      alt={product.name} 
+                      className="product-card-img" 
+                      onError={(e) => { e.target.src = 'https://via.placeholder.com/400x300?text=Product+Image' }}
+                      loading="lazy"
+                    />
+                  </Link>
 
-              <div className="product-card-content">
-                <div className="product-card-top">
-                  <span className="product-category-tag">{product.category}</span>
-                  <div className="product-rating-pill">
-                    ⭐ {product.rating > 0 ? product.rating : '4.5'}
+                  {/* Interactive Quick View Overlay Button */}
+                  <button 
+                    type="button" 
+                    className="card-quickview-btn"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      setQuickViewProduct(product)
+                    }}
+                    title="Quick Preview product"
+                  >
+                    <span>👁️</span>
+                    <span>Quick View</span>
+                  </button>
+
+                  <span className={`card-stock-pill ${product.stock === 0 ? 'stock-empty' : product.stock <= 5 ? 'stock-warning' : 'stock-available'}`}>
+                    {product.stock === 0 ? 'Out of Stock' : product.stock <= 5 ? `Only ${product.stock} left` : 'In Stock'}
+                  </span>
+                </div>
+
+                <div className="product-card-content">
+                  <div className="product-card-top">
+                    <span className="product-category-tag">{product.category}</span>
+                    <div className="product-rating-pill">
+                      ⭐ {product.rating > 0 ? product.rating : '4.5'}
+                    </div>
+                  </div>
+
+                  <Link to={`/product/${product._id}`} className="product-name-link">
+                    <h3 className="product-name">{product.name}</h3>
+                  </Link>
+
+                  <p className="product-description">
+                    {product.description.length > 85 
+                      ? `${product.description.substring(0, 85)}...` 
+                      : product.description}
+                  </p>
+
+                  <div className="product-card-vendor">
+                    <span>Store: <strong>{product.vendorBusinessName || product.vendor?.name || 'Verified Partner'}</strong></span>
+                  </div>
+
+                  <div className="product-card-footer">
+                    <div className="product-price-wrapper">
+                      <span className="product-price">{formatINR(product.price)}</span>
+                      <div className="product-mrp-wrapper">
+                        <span className="product-mrp">{formatINR(originalPrice)}</span>
+                        <span className="product-discount-tag">20% OFF</span>
+                      </div>
+                    </div>
+                    
+                    <button 
+                      className="btn-primary product-action-btn"
+                      onClick={() => handleAddToCart(product._id, product.name)}
+                      disabled={product.stock <= 0}
+                    >
+                      {product.stock > 0 ? 'Add to Cart' : 'Sold Out'}
+                    </button>
                   </div>
                 </div>
-
-                <Link to={`/product/${product._id}`} className="product-name-link">
-                  <h3 className="product-name">{product.name}</h3>
-                </Link>
-
-                <p className="product-description">
-                  {product.description.length > 85 
-                    ? `${product.description.substring(0, 85)}...` 
-                    : product.description}
-                </p>
-
-                <div className="product-card-vendor">
-                  <span>Store: <strong>{product.vendor?.name || 'Verified Partner'}</strong></span>
-                </div>
-
-                <div className="product-card-footer">
-                  <span className="product-price">{formatINR(product.price)}</span>
-                  
-                  <button 
-                    className="btn-primary product-action-btn"
-                    onClick={() => handleAddToCart(product._id, product.name)}
-                    disabled={product.stock <= 0}
-                  >
-                    {product.stock > 0 ? 'Add to Cart' : 'Sold Out'}
-                  </button>
-                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       ) : (
         <div className="empty-results" style={{ background: '#ffffff', borderRadius: '20px', border: '1px solid #e2e8f0' }}>
@@ -468,6 +495,15 @@ export default function Marketplace() {
             Reset All Filters
           </button>
         </div>
+      )}
+
+      {/* Quick View Interactive Modal */}
+      {quickViewProduct && (
+        <QuickViewModal
+          product={quickViewProduct}
+          onClose={() => setQuickViewProduct(null)}
+          onAddToCart={(productId, productName, qty) => handleAddToCart(productId, productName, qty)}
+        />
       )}
     </div>
   )

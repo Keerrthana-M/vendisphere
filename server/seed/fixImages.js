@@ -7,15 +7,15 @@ dotenv.config()
 const imageFixMap = [
   {
     name: 'Cotton Kurta Set',
-    imageUrl: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=500&auto=format&fit=crop&q=60'
+    imageUrl: 'https://images.unsplash.com/photo-1617137984095-74e4e5e3613f?w=600&auto=format&fit=crop&q=80'
   },
   {
     name: 'Organic Trail Snack Mix',
-    imageUrl: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500&auto=format&fit=crop&q=60'
+    imageUrl: 'https://images.unsplash.com/photo-1599599810769-bcde5a160d32?w=600&auto=format&fit=crop&q=80'
   },
   {
     name: 'Fast Magnetic Wireless Charger',
-    imageUrl: 'https://images.unsplash.com/photo-1587471879279-55d3a67e89e3?w=500&auto=format&fit=crop&q=60'
+    imageUrl: 'https://images.unsplash.com/photo-1615526675159-e248c3021d3f?w=600&auto=format&fit=crop&q=80'
   }
 ]
 

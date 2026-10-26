@@ -125,8 +125,8 @@ export const Navbar = () => {
 
         {/* Right Actions: Cart & Profile / Auth Buttons */}
         <div className="nav-actions">
-          {/* Customer Cart Button */}
-          {(!isAuthenticated || user?.role === 'customer') && (
+          {/* Customer Cart Button (only for logged in customers) */}
+          {isAuthenticated && user?.role === 'customer' && (
             <Link to="/cart" className="nav-cart-btn" aria-label="Shopping Cart">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="9" cy="21" r="1"></circle>
@@ -149,26 +149,28 @@ export const Navbar = () => {
             </div>
           ) : (
             <div className="user-profile-widget">
-              <div className="user-avatar-initials">
-                {getInitials(user?.name)}
-              </div>
-              <div className="user-info-meta">
-                <span className="user-display-name">{user?.name}</span>
-                <span className={`user-role-chip role-${user?.role}`}>
-                  {user?.role === 'vendor' ? 'Storefront' : user?.role}
-                </span>
-              </div>
+              <Link to="/profile" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
+                <div className="user-avatar-initials">
+                  {getInitials(user?.name)}
+                </div>
+                <div className="user-info-meta">
+                  <span className="user-display-name">{user?.name}</span>
+                  <span className={`user-role-chip role-${user?.role}`}>
+                    {user?.role === 'vendor' ? 'Storefront' : user?.role}
+                  </span>
+                </div>
+              </Link>
               <button 
                 onClick={handleLogout} 
                 className="btn-logout"
                 title="Sign out of your account"
+                aria-label="Log Out"
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
                   <polyline points="16 17 21 12 16 7"></polyline>
                   <line x1="21" y1="12" x2="9" y2="12"></line>
                 </svg>
-                <span>Exit</span>
               </button>
             </div>
           )}

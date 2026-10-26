@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { apiRequest } from '../../services/api'
 import { useAuth } from '../../context/AuthContext'
 import { formatINR } from '../../utils/formatINR'
+import { AreaTrendChart } from '../../components/common/Charts'
 
 export default function VendorDashboard() {
   const { user } = useAuth()
@@ -118,7 +119,16 @@ export default function VendorDashboard() {
             </div>
           </div>
 
-          <div className="dashboard-quick-links">
+          {/* Real-time Sales Curve Chart */}
+          <div style={{ marginTop: '2rem' }}>
+            <AreaTrendChart 
+              title="Store Revenue Velocity"
+              subtitle="Daily sales trend over the current 30-day billing cycle"
+              height={230}
+            />
+          </div>
+
+          <div className="dashboard-quick-links" style={{ marginTop: '2rem' }}>
             <Link to="/vendor/products" className="quick-link-card">
               <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: '#e0e7ff', color: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', marginBottom: '4px' }}>
                 📦

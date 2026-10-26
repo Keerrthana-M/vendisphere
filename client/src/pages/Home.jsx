@@ -1,5 +1,44 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
+import { apiRequest } from '../services/api'
+import QuickViewModal from '../components/common/QuickViewModal'
+
+const HERO_FEATURED = {
+  center: {
+    _id: '6adb4e9b3176a8b6d0314e39',
+    name: 'Wireless Noise-Cancelling Headphones',
+    category: 'Electronics',
+    price: 8999,
+    rating: 4.9,
+    stock: 18,
+    vendorBusinessName: 'TechHub Electronics',
+    imageUrl: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&auto=format&fit=crop&q=80',
+    description: 'Premium over-ear acoustic headphones with active noise cancellation, 40-hour battery life, and crystal-clear microphone audio.'
+  },
+  watch: {
+    _id: '6adb4e9b3176a8b6d0314e3a',
+    name: 'Horizon Smartwatch Pro',
+    category: 'Electronics',
+    price: 14999,
+    rating: 4.8,
+    stock: 25,
+    vendorBusinessName: 'TechHub Electronics',
+    imageUrl: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&auto=format&fit=crop&q=80',
+    description: 'Flagship AMOLED display smartwatch featuring continuous heart rate tracking, SpO2 sensor, GPS, and 7-day battery life.'
+  },
+  sneaker: {
+    _id: '6adb4e9b3176a8b6d0314e3b',
+    name: 'Urban Flex Running Shoes',
+    category: 'Fashion',
+    price: 5499,
+    rating: 4.7,
+    stock: 12,
+    vendorBusinessName: 'Style & Apparel Co',
+    imageUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&auto=format&fit=crop&q=80',
+    description: 'Lightweight, breathable athletic running shoes engineered with high-rebound cushioning for daily training and running.'
+  }
+}
 
 const CATEGORIES = [
   {
@@ -87,20 +126,43 @@ const CATEGORIES = [
 ]
 
 export default function Home() {
-  const [heroSearch, setHeroSearch] = useState('')
+  const [quickViewProduct, setQuickViewProduct] = useState(null)
+  const [cartToast, setCartToast] = useState('')
+
+  const { isAuthenticated, user, refreshCartCount } = useAuth()
   const navigate = useNavigate()
 
-  const handleHeroSearch = (e) => {
-    e.preventDefault()
-    if (heroSearch.trim()) {
-      navigate(`/marketplace?search=${encodeURIComponent(heroSearch.trim())}`)
-    } else {
-      navigate('/marketplace')
+  const handleAddToCart = async (productId, productName, quantity = 1) => {
+    if (!isAuthenticated) {
+      navigate('/login')
+      return
+    }
+    if (user?.role !== 'customer') {
+      alert('Only customer accounts can add items to cart.')
+      return
+    }
+
+    try {
+      await apiRequest('/cart', 'POST', { productId, quantity })
+      setCartToast(`✓ Added ${quantity > 1 ? `${quantity} items of ` : ''}"${productName || 'Item'}" to your cart!`)
+      if (refreshCartCount) refreshCartCount()
+      setTimeout(() => setCartToast(''), 3500)
+    } catch (err) {
+      alert(err.message || 'Failed to add item to cart')
     }
   }
 
   return (
     <div className="home-container">
+      {cartToast && (
+        <div className="toast-success" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+          <span>{cartToast}</span>
+          <Link to="/cart" style={{ color: '#047857', fontWeight: 700, textDecoration: 'underline', fontSize: '0.9rem' }}>
+            View Cart →
+          </Link>
+        </div>
+      )}
+
       {/* 1. Hero Section */}
       <section className="hero-section">
         <div className="hero-text">
@@ -115,28 +177,27 @@ export default function Home() {
             One intelligent marketplace connecting verified independent vendors with shoppers across India. Powered by real-time inventory intelligence and AI assistance.
           </p>
 
-          {/* Quick Hero Search Input */}
-          <form onSubmit={handleHeroSearch} className="hero-search-box animate-fade-up" style={{ width: '100%', maxWidth: '480px', display: 'flex', gap: '8px', marginTop: '0.5rem' }}>
-            <div style={{ position: 'relative', flex: 1 }}>
-              <input
-                type="text"
-                placeholder="Search products, brands, or categories..."
-                value={heroSearch}
-                onChange={(e) => setHeroSearch(e.target.value)}
-                className="form-input"
-                style={{ paddingLeft: '2.5rem', background: '#ffffff', borderRadius: '12px' }}
-              />
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }}>
-                <circle cx="11" cy="11" r="8"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-              </svg>
+          {/* Trust Value Micro-Strip */}
+          <div className="hero-trust-strip animate-fade-up" style={{ marginTop: '0.5rem' }}>
+            <div className="hero-trust-item">
+              <span>🛡️</span>
+              <span>100% Genuine</span>
             </div>
-            <button type="submit" className="btn-primary" style={{ whiteSpace: 'nowrap', borderRadius: '12px' }}>
-              Search
-            </button>
-          </form>
+            <div className="hero-trust-item">
+              <span>✓</span>
+              <span>Verified Sellers</span>
+            </div>
+            <div className="hero-trust-item">
+              <span>🚚</span>
+              <span>Free Delivery</span>
+            </div>
+            <div className="hero-trust-item">
+              <span>🤖</span>
+              <span>AI Assisted</span>
+            </div>
+          </div>
 
-          <div className="hero-buttons animate-fade-up">
+          <div className="hero-buttons animate-fade-up" style={{ marginTop: '1.25rem' }}>
             <Link to="/marketplace" className="btn-primary btn-lg">
               Explore Marketplace →
             </Link>
@@ -146,54 +207,78 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Right Column: Visual Composition Showcase */}
+        {/* Right Column: Visual Composition Showcase with Real Photography */}
         <div className="hero-visual animate-fade-up">
           <div className="product-composition">
             <div className="composition-glow"></div>
 
             {/* Overlapping Card 1: Top Right Smartwatch */}
-            <div className="composition-card card-top-right">
-              <div className="card-illustration watch-bg">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="6"></circle>
-                  <polyline points="12 9 12 12 13.5 13.5"></polyline>
-                  <path d="M12 6V3M12 21v-3"></path>
-                </svg>
-              </div>
+            <div 
+              className="composition-card card-top-right"
+              onClick={() => setQuickViewProduct(HERO_FEATURED.watch)}
+              style={{ cursor: 'pointer' }}
+              title="Click to preview Horizon Smartwatch Pro"
+            >
+              <img 
+                src={HERO_FEATURED.watch.imageUrl} 
+                alt="Horizon Smartwatch" 
+                className="hero-thumb-img"
+              />
               <div className="card-meta">
-                <span className="card-title">Horizon Smartwatch</span>
-                <span className="card-category">Verified Vendor • In Stock</span>
+                <span className="card-title">{HERO_FEATURED.watch.name}</span>
+                <span className="card-category" style={{ color: '#4f46e5', fontWeight: 700 }}>
+                  ₹14,999 • ⭐ {HERO_FEATURED.watch.rating}
+                </span>
               </div>
             </div>
 
             {/* Main Central Product Card */}
             <div className="composition-card card-center">
-              <div className="card-illustration main-product-bg">
-                <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M3 14v3a3 3 0 0 0 3 3h12a3 3 0 0 0 3-3v-3"></path>
-                  <path d="M3 14h3a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2H3v7z"></path>
-                  <path d="M21 14h-3a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h3v7z"></path>
-                  <path d="M5 7a7 7 0 0 1 14 0"></path>
-                </svg>
+              <div className="hero-center-img-box">
+                <img 
+                  src={HERO_FEATURED.center.imageUrl} 
+                  alt="Acoustic Wireless Headphones" 
+                  className="hero-center-img"
+                />
               </div>
               <div className="center-meta">
                 <span className="card-badge">⭐ Trending Choice</span>
-                <h3 className="main-card-title">Acoustic Pro Wireless</h3>
-                <span className="card-category" style={{ color: '#4f46e5', fontWeight: 700 }}>₹7,999</span>
-                <span style={{ fontSize: '0.78rem', color: '#10b981', fontWeight: 600, marginTop: '4px' }}>✓ Free Delivery Across India</span>
+                <h3 className="main-card-title">{HERO_FEATURED.center.name}</h3>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                  <span style={{ fontSize: '1.25rem', color: '#0f172a', fontWeight: 800 }}>₹8,999</span>
+                  <span style={{ fontSize: '0.85rem', color: '#94a3b8', textDecoration: 'line-through' }}>₹11,999</span>
+                  <span style={{ fontSize: '0.72rem', color: '#16a34a', fontWeight: 700, background: '#dcfce7', padding: '2px 6px', borderRadius: '4px' }}>25% OFF</span>
+                </div>
+                <span style={{ fontSize: '0.76rem', color: '#10b981', fontWeight: 600, marginTop: '2px' }}>✓ Free Delivery Across India</span>
+
+                <button 
+                  type="button" 
+                  className="btn-primary btn-sm"
+                  style={{ width: '100%', marginTop: '8px', height: '36px', borderRadius: '10px' }}
+                  onClick={() => setQuickViewProduct(HERO_FEATURED.center)}
+                >
+                  👁️ Quick Preview
+                </button>
               </div>
             </div>
 
             {/* Overlapping Card 2: Bottom Left Sneakers */}
-            <div className="composition-card card-bottom-left">
-              <div className="card-illustration sneaker-bg">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20.38 3.46L16 2a4 4 0 0 0-3.8 1.48L9 7M20.38 3.46A2 2 0 0 1 22 5.37V18a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-4.5a2 2 0 0 1 1.25-1.87l6.65-2.66M20.38 3.46L13.72 10"></path>
-                </svg>
-              </div>
+            <div 
+              className="composition-card card-bottom-left"
+              onClick={() => setQuickViewProduct(HERO_FEATURED.sneaker)}
+              style={{ cursor: 'pointer' }}
+              title="Click to preview Urban Flex Running Shoes"
+            >
+              <img 
+                src={HERO_FEATURED.sneaker.imageUrl} 
+                alt="Urban Flex Running Shoes" 
+                className="hero-thumb-img"
+              />
               <div className="card-meta">
-                <span className="card-title">Urban Flex Runner</span>
-                <span className="card-category">Footwear • 4.8 Rating</span>
+                <span className="card-title">{HERO_FEATURED.sneaker.name}</span>
+                <span className="card-category" style={{ color: '#4f46e5', fontWeight: 700 }}>
+                  ₹5,499 • ⭐ {HERO_FEATURED.sneaker.rating}
+                </span>
               </div>
             </div>
           </div>
@@ -364,6 +449,15 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Quick View Interactive Modal */}
+      {quickViewProduct && (
+        <QuickViewModal
+          product={quickViewProduct}
+          onClose={() => setQuickViewProduct(null)}
+          onAddToCart={(productId, productName, qty) => handleAddToCart(productId, productName, qty)}
+        />
+      )}
     </div>
   )
 }
